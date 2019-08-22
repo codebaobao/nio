@@ -1,2 +1,14 @@
 # nio
-epoll 函数
+Epoll模型
+epoll分为三个函数，epoll_create、epoll_ctl、epoll_wait，
+epoll_create是创建 进程监听fd的红黑树fd_rbt、就绪socket的双向队列readySocketList、进程睡眠队列sleepList。
+epoll_ctl可以在fd_rbt上创建、修改和删除一个fd节点；
+epoll_wait用于监听数据读写事件的发生；
+
+fd红黑树保存的是进程所监听的socket列表，每个fd挂一个睡眠队列fdSleepList，fdSleepList节点的callback是将fd放入到就绪时间列表readySocketList; 在readySocketList为空时，进程堵塞在sleepList上。
+因为fd的创建、删除和修改相对数据传输是一个低频操作，所以无需像select/poll那样每次在用户和内核空间拷贝，尤其在连接数很多的情况下。
+epoll在监听数据时做了一个优化，通过mmap将进程在用户态和内核态的虚拟地址空间映射到了同一个物理地址空间，避免了数据拷贝的开销。
+所以epoll的优点有三个：
+1）避免了重复从用户空间拷贝fd到内核空间；
+2）无需遍历监听的所有socket，只需要处理就绪的socket列表；
+3）避免了具体数据从内核态拷贝到用户态的开销。
